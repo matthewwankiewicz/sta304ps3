@@ -1,0 +1,99 @@
+---
+title: "Interesting Title"
+author: "Team"
+date: "19/10/2020"
+output: html_document
+abstract: "Do abstract"
+---
+
+```{r}
+#install.packages("tidyverse")
+#install.packages("brms")
+library(tidyverse)
+library(brms)
+```
+
+
+```{r}
+# read in gss 2017
+
+gss <- read_csv("inputs/gss.csv")
+```
+
+
+# Introduction
+
+# Results
+
+```{r}
+# filtering down what columns we plan to use
+
+gss <- gss %>% 
+  mutate(born_canada = ifelse(place_birth_canada == "Born in Canada", 1, 0))
+
+planned_cols <- gss %>% select(
+  age, age_first_child, age_start_relationship, 
+  age_at_first_marriage, age_at_first_birth, feelings_life, sex, place_birth_canada,
+  place_birth_macro_region, province, pop_center, marital_status, vis_minority, 
+  education, own_rent, living_arrangement, average_hours_worked, self_rated_health,
+  self_rated_mental_health, regilion_importance, income_respondent, income_family,
+  number_marriages, born_canada
+)
+
+planned_cols2 <- planned_cols %>% select(
+  age, feelings_life, sex, province, marital_status, education, own_rent,
+  average_hours_worked, self_rated_mental_health, self_rated_health, 
+  regilion_importance, income_family, number_marriages, born_canada
+)
+
+planned_cols3 <- planned_cols2 %>% select(
+  feelings_life, sex, income_family, self_rated_mental_health,
+  marital_status, age, born_canada
+)
+
+#planned age groups for now: 15-35, 35-65, 65+
+
+test <- planned_cols3 %>% 
+  drop_na(self_rated_mental_health) %>% 
+  filter(self_rated_mental_health != "Don't Know") %>% 
+  mutate(happy = ifelse(feelings_life > 5, 1, 0),
+         mental_health = ifelse(self_rated_mental_health == "Excellent", 5,
+                                ifelse(self_rated_mental_health == "Very Good", 4,
+                                       ifelse(self_rated_mental_health == "Good", 3,
+                                              ifelse(self_rated_mental_health == "Fair", 2, 1)))))
+
+
+model <- brm(happy ~ born_canada + income_family
+             + self_rated_mental_health + groups_age, data = test, family = bernoulli(),
+             seed = 21)
+```
+
+# Discussion
+
+## Analysis
+
+## Weaknesses and Next Steps
+
+# Appendicies
+
+## Citations
+
+- R Core Team (2019). R: A language and environment for statistical computing. R Foundation for
+  Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
+
+- Paul-Christian Bürkner (2017). brms: An R Package for Bayesian Multilevel Models Using Stan.
+  Journal of Statistical Software, 80(1), 1-28. doi:10.18637/jss.v080.i01
+
+- Paul-Christian Bürkner (2018). Advanced Bayesian Multilevel Modeling with the R Package brms.
+  The R Journal, 10(1), 395-411. doi:10.32614/RJ-2018-017
+  
+- JJ Allaire and Yihui Xie and Jonathan McPherson and Javier Luraschi and Kevin Ushey and Aron
+  Atkins and Hadley Wickham and Joe Cheng and Winston Chang and Richard Iannone (2020).
+  rmarkdown: Dynamic Documents for R. R package version 2.3. URL https://rmarkdown.rstudio.com.
+
+- Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43),
+  1686, https://doi.org/10.21105/joss.01686
+  
+  
+  
+  
