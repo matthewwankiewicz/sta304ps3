@@ -8,16 +8,12 @@ abstract: "Do abstract"
 
 ```{r}
 #install.packages("tidyverse")
-#install.packages("brms")
-#install.packages("rstan")
 library(tidyverse)
-library(brms)
 ```
 
 
 ```{r}
 # read in gss 2017
-
 gss <- read_csv("inputs/gss.csv")
 ```
 
@@ -89,29 +85,35 @@ test <- test %>%
 
 We plan to run a logistic regression model in the form:
 
-$$Pr(y_i = 1) = logit^{-1} \left( \alpha^{health}_{h[i]} + \alpha^{mental health}_{m[i]} + \alpha^{income}_{i[i]} + \alpha^{canada}_{c[i]}\right)$$
-where each $\alpha$ refers to self rated health and mental health, age and whether the person is born in Canada. The notation $h[i]$ refers to a the health rating individual $i$ gives themselves, $m[i]$ refers to the mental health rating person $i$ gave themselves, $i[i]$ refers to the household income of person $i$ and lastly, $c[i]$ refers to whether the person is born in Canada or not. 
+$$Pr(y_i = 1) = logit^{-1} \left( \alpha^{health}_{h[i]} + \alpha^{income}_{i[i]} + \alpha^{canada}_{c[i]}\right)$$
+where each $\alpha$ refers to self rated health and mental health, age and whether the person is born in Canada. The notation $h[i]$ refers to a the health rating individual $i$ gives themselves, $i[i]$ refers to the household income of person $i$ and lastly, $c[i]$ refers to whether the person is born in Canada or not. 
 
-These are modelled in the form of: $$\alpha_h^{health} \sim  N(0, \sigma_{health})$$ for s = 1, 2, ... I. The same follows for the other distributions.
+This model was run using the glm. The glm function was run with the family being specified as binomial() because our response variable "happy" is a binary variable with responses of "yes" or "no".
 
-This model was run using the brms package in R and specifically using the brm function from this package. The brm function was run with the family being specified as bernoulli() because our response variable "happy" is a binary variable with responses of "yes" or "no".
+The ouput of our model gives us a probability
 
 ```{r}
 # run the model with feeling of life as the response, born in canada, mental health, 
 # and age being the predictors
 
-model2 <- brm(happy ~  avg_health_word +
-              income_family + born_canada, data = test,
-              family = bernoulli(), seed = 21)
+model_lm <- glm(happy ~ sex+ income_family + born_canada +
+                          avg_health_word, data = test, 
+                family = binomial())
 
-summary(model2)
+summary(model_lm)
+coefficients <- broom::tidy(model_lm)
+coefficients <- coefficients %>% 
+  mutate(upper_error = estimate + std.error,
+         lower_error = estimate - std.error)
 ```
 
 
 ```{r}
 # get summary and plot coefficients
-summary(model)
-mcmc_plot(model2)
+coefficients %>% ggplot(aes(term, estimate)) + geom_point() + 
+  geom_errorbar(aes(ymin = lower_error, ymax = upper_error),
+                width = .5, colour = "red") +
+  coord_flip()
 ```
 
 
@@ -128,12 +130,6 @@ mcmc_plot(model2)
 
 - R Core Team (2019). R: A language and environment for statistical computing. R Foundation for
   Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
-
-- Paul-Christian Bürkner (2017). brms: An R Package for Bayesian Multilevel Models Using Stan.
-  Journal of Statistical Software, 80(1), 1-28. doi:10.18637/jss.v080.i01
-
-- Paul-Christian Bürkner (2018). Advanced Bayesian Multilevel Modeling with the R Package brms.
-  The R Journal, 10(1), 395-411. doi:10.32614/RJ-2018-017
   
 - JJ Allaire and Yihui Xie and Jonathan McPherson and Javier Luraschi and Kevin Ushey and Aron
   Atkins and Hadley Wickham and Joe Cheng and Winston Chang and Richard Iannone (2020).
@@ -143,4 +139,7 @@ mcmc_plot(model2)
   1686, https://doi.org/10.21105/joss.01686
   
 - Rohan Alexander and Sam Caetano (2020). Cleaning the GSS 2017 file.
+
+## Code
   
+Code supports this analysis can be found at https://github.com/matthewwankiewicz/sta304ps3
