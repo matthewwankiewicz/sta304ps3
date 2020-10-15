@@ -9,6 +9,7 @@ abstract: "Do abstract"
 ```{r}
 #install.packages("tidyverse")
 #install.packages("brms")
+#install.packages("rstan")
 library(tidyverse)
 library(brms)
 ```
@@ -23,7 +24,7 @@ gss <- read_csv("inputs/gss.csv")
 
 # Introduction
 
-# Results
+# Data
 
 ```{r}
 # filtering down what columns we plan to use
@@ -48,7 +49,7 @@ planned_cols2 <- planned_cols %>% select(
 
 planned_cols3 <- planned_cols2 %>% select(
   feelings_life, sex, income_family, self_rated_mental_health,
-  marital_status, age, born_canada
+  marital_status, age, born_canada, self_rated_health, average_hours_worked
 )
 
 #planned age groups for now: 15-35, 35-65, 65+
@@ -62,11 +63,56 @@ test <- planned_cols3 %>%
                                        ifelse(self_rated_mental_health == "Good", 3,
                                               ifelse(self_rated_mental_health == "Fair", 2, 1)))))
 
+# create new variable, grouping ages by 5's
+test <- test %>% 
+  mutate(age_groups = cut(age,
+                          breaks = c(seq(15,80, by = 5), Inf),
+                          labels = seq(15, 80, by = 5), right = F))
 
-model <- brm(happy ~ born_canada + income_family
-             + self_rated_mental_health + groups_age, data = test, family = bernoulli(),
-             seed = 21)
+test <- test %>% 
+  mutate(health = ifelse(self_rated_health == "Excellent", 5,
+                                ifelse(self_rated_health == "Very Good", 4,
+                                       ifelse(self_rated_health == "Good", 3,
+                                              ifelse(self_rated_health == "Fair", 2, 1)))))
+
+test <- test %>% 
+  mutate(avg_health = round((health + mental_health)/2))
+
+test <- test %>% 
+  mutate(avg_health_word = ifelse(avg_health == 1, "Poor",
+                                  ifelse(avg_health == 2, "Fair",
+                                         ifelse(avg_health == 3, "Good",
+                                                ifelse(avg_health == 4, "Very Good", "Excellant")))))
 ```
+
+# Model
+
+We plan to run a logistic regression model in the form:
+
+$$Pr(y_i = 1) = logit^{-1} \left( \alpha^{health}_{h[i]} + \alpha^{mental health}_{m[i]} + \alpha^{income}_{i[i]} + \alpha^{canada}_{c[i]}\right)$$
+where each $\alpha$ refers to self rated health and mental health, age and whether the person is born in Canada. The notation $h[i]$ refers to a the health rating individual $i$ gives themselves, $m[i]$ refers to the mental health rating person $i$ gave themselves, $i[i]$ refers to the household income of person $i$ and lastly, $c[i]$ refers to whether the person is born in Canada or not. 
+
+These are modelled in the form of: $$\alpha_h^{health} \sim  N(0, \sigma_{health})$$ for s = 1, 2, ... I. The same follows for the other distributions.
+
+```{r}
+# run the model with feeling of life as the response, born in canada, mental health, 
+# and age being the predictors
+
+model2 <- brm(happy ~  avg_health_word +
+              income_family + born_canada, data = test,
+              family = bernoulli(), seed = 21)
+
+summary(model2)
+```
+
+
+```{r}
+# get summary and plot coefficients
+summary(model)
+mcmc_plot(model2)
+```
+
+
 
 # Discussion
 
@@ -94,6 +140,5 @@ model <- brm(happy ~ born_canada + income_family
 - Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43),
   1686, https://doi.org/10.21105/joss.01686
   
-  
-  
+- Rohan Alexander and Sam Caetano (2020). Cleaning the GSS 2017 file.
   
