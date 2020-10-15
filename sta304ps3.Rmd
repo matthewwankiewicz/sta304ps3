@@ -94,6 +94,8 @@ where each $\alpha$ refers to self rated health and mental health, age and wheth
 
 These are modelled in the form of: $$\alpha_h^{health} \sim  N(0, \sigma_{health})$$ for s = 1, 2, ... I. The same follows for the other distributions.
 
+This model was run using the brms package in R and specifically using the brm function from this package. The brm function was run with the family being specified as bernoulli() because our response variable "happy" is a binary variable with responses of "yes" or "no".
+
 ```{r}
 # run the model with feeling of life as the response, born in canada, mental health, 
 # and age being the predictors
