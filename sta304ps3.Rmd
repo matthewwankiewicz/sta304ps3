@@ -65,11 +65,28 @@ planned_cols3 <- planned_cols3 %>%
   mutate(level_of_ed = ifelse(grepl("high school", education, ignore.case = T), 1, 0)) 
 ```
 
+```{r}
+gss2 %>% ggplot(aes(income_respondent)) + 
+  geom_bar() +
+  labs(title = "Figure 1: Distribution of Income Groups",
+       x = "Income", y = "Count",
+       caption = "Source: GSS 2017 Survey Data")
+
+gss2 %>% ggplot(aes(education)) + 
+  geom_bar() +
+  labs(title = "Figure 2: Distribution of Education Groups",
+       x = "Education Level", y = "Count",
+       caption = "Source: GSS 2017 Survey Data") +
+  coord_flip()
+```
+
+
+
 # Model
 
 We plan to run a logistic regression model in the form:
 
-$$Pr(y_i = 1) = logit^{-1} \left( \alpha^{marriage}_{m[i]} + \alpha^{income}_{i[i]} + \alpha^{gender}_{g[i]} + \alpha^{children}_{c[i]} + \alpha^{rent}_{r[i]}\right)$$
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{children} + \beta_3*x_{male} + \beta_4*x_{income > 125000} + \beta_5*x_{income_{25000-49999}} + \\ \beta_6*x_{income_{50000 - 74999}} + \beta_7*x_{income_{75000-99999}} + \beta_8*x_{income_{< 25000}} + \beta_9*x_{marraige} + \beta_{10}*x_{rent}$$
 where each $\alpha$ refers to self rated health and mental health, age and whether the person is born in Canada. The notation $i[i]$ refers to a person's individual income, $r[i]$ represent whether a person is renting their house or not, $g[i]$ represents a person's gender, for this scenario it has been restricted to male/female and lastly, .
 
 The value we want to predict is whether or not someone has had a higher education, more specifically, we restrict it to a variable which gives a 1 for if a person has only completed high school and a 0 if they've completed some other level of education.
@@ -78,7 +95,7 @@ This model was run using the glm. The glm function was run with the family being
 
 The ouput of our model gives us a probability of whether someone has only completed high school. 
 
-Figure 1
+
 ```{r}
 # run the model with feeling of life as the response, born in canada, mental health, 
 # and age being the predictors
@@ -89,13 +106,20 @@ gss2 <- gss2 %>%
 gss_logit <- glm(only_highschool ~ number_total_children_known +
                    sex + income_respondent + rent + married,
                  data = gss2, family = binomial())
-summary(gss_logit)
-logit_summary <- broom::tidy(gss_logit, conf.int = T)
-logit_summary
 #gtsummary::tbl_regression(gss_logit, intercept = T)
 ```
 
-Using the glm() function, our logit function is:
+# Results
+
+Figure 3
+```{r}
+# visualize the model
+summary(gss_logit)
+logit_summary <- broom::tidy(gss_logit, conf.int = T)
+logit_summary
+```
+
+Using the glm() function, we find that our logit function is:
 
 $$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -1.52 - .5*x_{children}
 - .455*x_{male} +-.147*x_{income > 125000} + 1.5*x_{income_{25000-49999}} + \\ .76*x_{income_{50000 - 74999}} + .265*x_{income_{75000-99999}} + 2.22*x_{income_{< 25000}} + .61*x_{marraige} + .116*x_{rent}$$
@@ -110,7 +134,7 @@ logit_summary %>% ggplot(aes(term, estimate)) + geom_point() +
                 width = .5, colour = "red") +
   geom_hline(aes(yintercept = 0), color = "black", linetype = "dashed") +
   coord_flip() + 
-  labs(title = "Distribution of Estimation of Coefficients",
+  labs(title = "Figure 4: Distribution of Estimation of Coefficients",
        subtitle = "Red bars represent estimated error",
        y = "Weight",
        x = "Estimate",
@@ -119,11 +143,14 @@ logit_summary %>% ggplot(aes(term, estimate)) + geom_point() +
 
 This graph shows the distribution of coefficients for each variable covered, with the standard error extended to the left and right. There is a bar in the middle of the graph (at x = 0), to help visualize whether the variable has increases the probability of a person only completing high school.
 
-Figure 3
+Figure 5
 ```{r}
 gtsummary::tbl_regression(gss_logit, intercept = T)
 ```
 
+This is another way of looking at our coefficients, we can find odd ratios of each category impacting whether or not someone has only completed high school. The way we intepret these odd ratios are through the decimal points of the ratios. If one outcome is n decimal places higher, the odds of it impacting the model's decision are n times more likely. For example, we see that the odds ratio for Males is 0.45, which means that males are 45% more likely to have only completed high school. The same idea applies for negative values, it means they are less likely to impact. 
+
+We can also look at the p-values, to see which results are the most statistically significant. P-values are used with null hypotheses to determine if an experiment is significant. Since our p-values are under the traditional benchmark of 0.05, we can reject our null-hypothesis and conclude that these results are in-fact, significant.
 
 # Discussion
 
