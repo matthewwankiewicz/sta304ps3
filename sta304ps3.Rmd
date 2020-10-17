@@ -1,6 +1,6 @@
 ---
 title: "Interesting Title"
-author: "Team"
+author: "Matthew Wankiewcz, Xiaoyan Yang, Alen Mitrovski, Harry Hwang"
 date: "19/10/2020"
 output: html_document
 abstract: "Do abstract"
@@ -8,14 +8,14 @@ abstract: "Do abstract"
 
 ```{r, echo = F, warning=F, message=F}
 #install.packages("tidyverse")
-install.packages("gtsummary")
+#install.packages("gtsummary")
 library(tidyverse)
 library(gtsummary)
 ```
 
 
 ```{r, echo = F, warning=F, message=F}
-# read in gss 2017
+# read in gss 2017 
 gss <- read_csv("inputs/gss.csv")
 ```
 
@@ -23,6 +23,14 @@ gss <- read_csv("inputs/gss.csv")
 # Introduction
 
 # Data
+
+The dataset we used was from the 2017 GSS survey conducted by the Canadian Government. According to the Government's website, the objectives of the survey were to gather data on social trends and to provide information on the most important social issues. 
+
+EXPLAIN METHOD. 
+
+The population for this survey was the total population of Canada but only those who live in the 10 provinces, are not in jail and are 15 years of age or older. The frame of this survey used Stats Canada's phone database and data from the Census in order to find potential candidates for the survey. Lastly, the sample conducted was stratified sampling. The researchers divided the country into different stratas, they required a minimum amount of samples from each area and made sure that the stratas were balanced in order to reflect the country's views properly. 
+
+Respondents were found through the Census because it is conducted on people over the age of 15, it fit right in with their target population. Their initial sample had 43,000 people and brought down the number of invitations sent to 34,000 households while 20,000 responses were expected. The government reported a response rate of 52.4% and with our records, they collected 20602 responses. As for non-response, the researchers changed the weighting on responses in order to account for non-response in order to avoid bias.
 
 ```{r, echo=F}
 # filtering down what columns we plan to use
@@ -52,69 +60,91 @@ planned_cols3 <- planned_cols2 %>% select(
   age_at_first_marriage
 )
 
+# create new variable to show if respondent only has a high school education
 gss2 <- gss %>% 
   mutate(only_highschool = ifelse(grepl("high school", education, ignore.case = T), 1, 0),
          minority = ifelse(vis_minority == "Not a visible minority", 1, 0))
+
+# create new variable to show if respondent owns or rents
 gss2 <- gss2 %>% 
   mutate(rent = ifelse(own_rent == "Rented, even if no cash rent is paid", 1, 0))
 
-gss2 %>% group_by(vis_minority) %>% 
-  summarise(n = n())
+gss2 <- gss2 %>% 
+  mutate(married = ifelse(marital_status == "Married", 1, 0))
+
+gss3 <- gss2 %>% 
+  mutate(age_groups = cut(age,
+    breaks = c(0, 30, 40, 50, 60, 70, Inf),
+    labels = c("15-29", "30-39", "40-49", "50-59", "60-69", "70+")
+  ))
 
 planned_cols3 <- planned_cols3 %>% 
   mutate(level_of_ed = ifelse(grepl("high school", education, ignore.case = T), 1, 0)) 
 ```
 
 ```{r}
+
+# bar plot for income
 gss2 %>% ggplot(aes(income_respondent)) + 
   geom_bar() +
   labs(title = "Figure 1: Distribution of Income Groups",
        x = "Income", y = "Count",
        caption = "Source: GSS 2017 Survey Data")
 
+# bar plot for education level (not binary)
 gss2 %>% ggplot(aes(education)) + 
   geom_bar() +
   labs(title = "Figure 2: Distribution of Education Groups",
        x = "Education Level", y = "Count",
        caption = "Source: GSS 2017 Survey Data") +
   coord_flip()
+
+# bar plot showing age groups
+gss3 %>% ggplot(aes(age_groups)) + 
+  geom_bar() +
+  labs(title = "Figure 3: Distribution of Age Groups",
+       x = "Age Group", y = "Count",
+       caption = "Source: Simulated Data")
 ```
 
+Figures 1, 2, and 3 show the distribution of income, education level, and age, respectively.
 
+From our plots we can see some strengths and weaknesses of the survey. We can see that the distribution of age is fairly even which allows us to get a good idea of the opinions of all age ranges. Another strength is that the distribution of education levels seems to be accurate, we see that fewer people tend to get Bachelor's degrees compared to high school diplomas, which bodes well for our intended model, we need a fairly even distribution to get a good model. 
+
+As for our weaknesses, we see that many respondents had incomes under 50000 dollars, which could represent people that are retired or younger people who are in school and don't work as much. Also, some questions are subjective in this survey, such as self rating your health and mental health or your feelings on life. This is tough to interpret because one person's idea of good health could be someones definition of poor health which can cause some issues with interpretations. 
+
+For our model, we used the variables: number of children, sex, respondent income, whether the respondent is married not, rent (which was changed to become a binary 1 or 0 for if a person rents a home) and lastly we made a new variable which is binary and gives a 1 if the respondent has only completed high school or equivalent and 0 otherwise.
 
 # Model
 
 We plan to run a logistic regression model in the form:
 
 $$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{children} + \beta_3*x_{male} + \beta_4*x_{income > 125000} + \beta_5*x_{income_{25000-49999}} + \\ \beta_6*x_{income_{50000 - 74999}} + \beta_7*x_{income_{75000-99999}} + \beta_8*x_{income_{< 25000}} + \beta_9*x_{marraige} + \beta_{10}*x_{rent}$$
-where each $\alpha$ refers to self rated health and mental health, age and whether the person is born in Canada. The notation $i[i]$ refers to a person's individual income, $r[i]$ represent whether a person is renting their house or not, $g[i]$ represents a person's gender, for this scenario it has been restricted to male/female and lastly, .
+where each $\beta$ represents a coefficient determined by our model and is multiplied by each variable we planned to include. For some variables such as income, we see x values for each level. This happens because our model will expect a 1 or 0 for each of the entries, so if someone has an income under 25000 dollars, that $\beta$ will be 1 and the others for income will be 0. Also, the $\beta$ for number of children is just multiplied by how many children the person has, it does not use binary values like the other coefficients. $\hat{p}$ represent the probability a respondent has completed high school and $log$ represents the natural logarithm.
 
 The value we want to predict is whether or not someone has had a higher education, more specifically, we restrict it to a variable which gives a 1 for if a person has only completed high school and a 0 if they've completed some other level of education.
 
 This model was run using the glm. The glm function was run with the family being specified as binomial() because our response variable "only_highschool" is a binary variable with responses of "yes" or "no".
 
-The ouput of our model gives us a probability of whether someone has only completed high school. 
+The ouput of our model gives us a probability of whether someone has only completed high school. We find this by assigning each $\beta$ value a 1 or 0 (or number for number of children) and then solve it using the equation: $$\hat{p} = \frac{e^{sum}}{1 + e^{sum}}$$. 
 
+Where e is the exponential function and sum is the sum of our model equation.
 
 ```{r}
-# run the model with feeling of life as the response, born in canada, mental health, 
-# and age being the predictors
-
-gss2 <- gss2 %>% 
-  mutate(married = ifelse(marital_status == "Married", 1, 0))
+# run model with high school education as response, # of children, gender,
+# income, rent/own home and marriage status being explanatory
 
 gss_logit <- glm(only_highschool ~ number_total_children_known +
                    sex + income_respondent + rent + married,
                  data = gss2, family = binomial())
-#gtsummary::tbl_regression(gss_logit, intercept = T)
 ```
 
 # Results
 
-Figure 3
+Figure 4
 ```{r}
 # visualize the model
-summary(gss_logit)
+#summary(gss_logit)
 logit_summary <- broom::tidy(gss_logit, conf.int = T)
 logit_summary
 ```
@@ -131,20 +161,23 @@ The output of this model is not like other regressions where we plug in numbers 
 # get summary and plot coefficients
 logit_summary %>% ggplot(aes(term, estimate)) + geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
-                width = .5, colour = "red") +
-  geom_hline(aes(yintercept = 0), color = "black", linetype = "dashed") +
+                width = .5, colour = "black") +
+  geom_hline(aes(yintercept = 1), color = "black", linetype = "dashed") +
   coord_flip() + 
-  labs(title = "Figure 4: Distribution of Estimation of Coefficients",
+  labs(title = "Figure 5: Distribution of Estimation of Coefficients",
        subtitle = "Red bars represent estimated error",
        y = "Weight",
        x = "Estimate",
-       caption = "Source: GSS 2017 Data")
+       caption = "Source: GSS 2017 Data") +
+  theme_classic()
 ```
 
 This graph shows the distribution of coefficients for each variable covered, with the standard error extended to the left and right. There is a bar in the middle of the graph (at x = 0), to help visualize whether the variable has increases the probability of a person only completing high school.
 
-Figure 5
+Figure 6
 ```{r}
+# plot more detailed regression table, including Odds Ratios and p-values for 
+# odds ratios
 gtsummary::tbl_regression(gss_logit, intercept = T)
 ```
 
@@ -155,6 +188,15 @@ We can also look at the p-values, to see which results are the most statisticall
 # Discussion
 
 ## Analysis
+
+Now that we've created our model and plotted it, it's time to interpret what it means and how it impacts the small and large worlds. Firstly, we should interpret our coefficients and how they determine a person's education level. When looking at our p-values for the coefficients, we find that almost all coefficients are very strong evidence to reject our null hypothesis as discussed after figure 6. We see that having an income level of over 125000 dollars still gives evidence to reject our null hypothesis (that it has no impact on education level) but it's very close to not being enough evidence. What this means is that although it does decrease your chances of only having a high school diploma, there may have been instances where a person reaches that income level with a high school diploma. This makes sense because in the past people did not need university degrees in order to make a successful living, because most people didn't go to university. According to an article in the UK Guardian called "Student Experience - Then and Now", "In the early 1960s, only 4% of school leavers went to university, rising to around 14% by the end of the 1970s. Nowadays, more than 40% of young people start undergraduate degrees" (Lightfoot 2016). This is a significant increase in levels and can help explain the higher than normal p-value for our model's standards.
+
+Now that we've explained our p-values, we can take a look at which coefficients help lead to the largest increase in odds of only having a high school diploma. In order to do this most accurately, it's best to do this category by category as the ratios are relative to their categories. First, we can look at the number of children a person has and we see that for every child a person has their odds of only completing a high school diploma decreases by 1.6 times ##CONFIRM##. This result makes sense majority of the younger respondents likely have only completed high school and don't have any kids. It's more common for some to go to university and have a full time job to have more kids than a high schooler. Next we can move on to gender and we find an odds ratio of 0.54, since the value is below 1, it implies that men are less likely to have only completed high school. Since this study looks at high school as a benchmark, we currently see more men in trade schools and while the proportion is changing, that is likely the reason why the odds are lower for men.
+
+Next we can look at income, which seems to be a fairly strong predictor of a person's education level. Our benchmark value for this category was an income level of 100000 - 124999 dollars. We can see that people with incomes lower than 50000 are much more likely to have only completed high school, income levels under 25000 have odds 110% higher than those of 100000 - 124999 dollars and the level of 25000 - 49999 has odds about 40% higher than the benchmark. These are very significant results because we now have a clear view of how income predicts level of education. This is also shown at the other extreme, with income over 125000, we see that people are 1.14 times less likely to have only completed high school. 
+
+Lastly, when we look at the variables that cover renting vs owning and a person's marraige status, we find that people that rent houses have lower chances of only completed high school and people that are married are much more likely to have completed a higher education. The renting coefficient is suprising because you would expect that people who own homes would have completed high school. There are a few probable explanations; more respondents are renting their homes meaning that it skews the data or younger people that responded may have not known what to select and said they owned the home they live at.
+
 
 ## Weaknesses and Next Steps
 
@@ -176,6 +218,10 @@ We can also look at the p-values, to see which results are the most statisticall
 
 - Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R
   package version 1.28.
+  
+- Daniel D. Sjoberg, Michael Curry, Margie Hannum, Karissa Whiting and Emily C. Zabor (2020).
+  gtsummary: Presentation-Ready Data Summary and Analytic Result Tables. R package version
+  1.3.5. https://CRAN.R-project.org/package=gtsummary
 
 ## Code
   
