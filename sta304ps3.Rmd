@@ -2,8 +2,16 @@
 title: "Interesting Title"
 author: "Matthew Wankiewcz, Xiaoyan Yang, Alen Mitrovski, Harry Hwang"
 date: "19/10/2020"
-output: html_document
-abstract: "Do abstract"
+output:
+  pdf_document: default
+  html_document: default
+abstract: The need for higher education is an idea that is constantly growing around
+  the world, especially in Canada. In this paper, we run a logistic regression model
+  to determine which factors seems to impact someone's chances of only having a high
+  school diploma using GSS survey data from 2017. From our model, we find that the
+  higher a person's income is, the more likely they are to have completed another
+  level of education other than high school. These results are significant as it shows
+  that a high school education may not lead to high incomes in Canada.
 ---
 
 ```{r, echo = F, warning=F, message=F}
@@ -15,7 +23,7 @@ library(gtsummary)
 
 
 ```{r, echo = F, warning=F, message=F}
-# read in gss 2017 
+# read in gss 2017 data
 gss <- read_csv("inputs/gss.csv")
 ```
 
@@ -24,9 +32,7 @@ gss <- read_csv("inputs/gss.csv")
 
 # Data
 
-The dataset we used was from the 2017 GSS survey conducted by the Canadian Government. According to the Government's website, the objectives of the survey were to gather data on social trends and to provide information on the most important social issues. 
-
-EXPLAIN METHOD. 
+The dataset we used was from the 2017 GSS survey conducted by the Canadian Government ^[In order to obtain the data, we used the GSS cleaning script from Rohan Alexander and Samantha-Jo Caetano. This file is included in the GitHub repo which supports this analysis and can be found [here](https://github.com/matthewwankiewicz/sta304ps3). GSS files can be accessed by going to www.chass.utoronto.ca, then clicking data centre, signing in, and finding the GSS survey. Then click the desired year (we chose 2017), then click download csv in STATA form, select all variables and download the csv. Then using the gss_cleaning-1.R file in inputs along with gss_dict and gss_labels, run the cleaning script to get your csv.]. According to the Government's website, the objectives of the survey were to gather data on social trends and to provide information on the most important social issues. 
 
 The population for this survey was the total population of Canada but only those who live in the 10 provinces, are not in jail and are 15 years of age or older. The frame of this survey used Stats Canada's phone database and data from the Census in order to find potential candidates for the survey. Lastly, the sample conducted was stratified sampling. The researchers divided the country into different stratas, they required a minimum amount of samples from each area and made sure that the stratas were balanced in order to reflect the country's views properly. 
 
@@ -47,7 +53,7 @@ used_cols <- gss %>% select(
   number_marriages, born_canada, education
 )
 
-planned_cols2 <- planned_cols %>% select(
+planned_cols2 <- used_cols %>% select(
   age, feelings_life, sex, province, marital_status, education, own_rent,
   average_hours_worked, self_rated_mental_health, self_rated_health, 
   regilion_importance, income_family, number_marriages, born_canada, education,
@@ -82,29 +88,34 @@ planned_cols3 <- planned_cols3 %>%
   mutate(level_of_ed = ifelse(grepl("high school", education, ignore.case = T), 1, 0)) 
 ```
 
-```{r}
+```{r, echo = F, message=F, warning=F}
 
 # bar plot for income
 gss2 %>% ggplot(aes(income_respondent)) + 
   geom_bar() +
   labs(title = "Figure 1: Distribution of Income Groups",
        x = "Income", y = "Count",
-       caption = "Source: GSS 2017 Survey Data")
+       caption = "Source: GSS 2017 Survey Data") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 50, hjust = 1, size = 7))
 
 # bar plot for education level (not binary)
 gss2 %>% ggplot(aes(education)) + 
   geom_bar() +
-  labs(title = "Figure 2: Distribution of Education Groups",
+  labs(title = "Figure 2: Distribution of Educations",
        x = "Education Level", y = "Count",
        caption = "Source: GSS 2017 Survey Data") +
-  coord_flip()
+  coord_flip() +
+  theme_minimal() +
+  theme(axis.text.y = element_text(size = 7))
 
 # bar plot showing age groups
 gss3 %>% ggplot(aes(age_groups)) + 
   geom_bar() +
   labs(title = "Figure 3: Distribution of Age Groups",
        x = "Age Group", y = "Count",
-       caption = "Source: Simulated Data")
+       caption = "Source: Simulated Data") +
+  theme_minimal()
 ```
 
 Figures 1, 2, and 3 show the distribution of income, education level, and age, respectively.
@@ -128,9 +139,9 @@ This model was run using the glm. The glm function was run with the family being
 
 The ouput of our model gives us a probability of whether someone has only completed high school. We find this by assigning each $\beta$ value a 1 or 0 (or number for number of children) and then solve it using the equation: $$\hat{p} = \frac{e^{sum}}{1 + e^{sum}}$$. 
 
-Where e is the exponential function and sum is the sum of our model equation.
+Where e is the exponential function and sum is the sum of our model's equation.
 
-```{r}
+```{r, echo=F, message=F, warning=F}
 # run model with high school education as response, # of children, gender,
 # income, rent/own home and marriage status being explanatory
 
@@ -142,7 +153,7 @@ gss_logit <- glm(only_highschool ~ total_children +
 # Results
 
 Figure 4
-```{r}
+```{r, echo=F, message=F, warning=F}
 # visualize the model
 #summary(gss_logit)
 logit_summary <- broom::tidy(gss_logit, conf.int = T)
@@ -151,13 +162,13 @@ logit_summary
 
 Using the glm() function, we find that our logit function is:
 
-$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.66 - .18*x_{children}
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.67 - .18*x_{children}
 + .48*x_{male} +-.1*x_{income > 125000} + 1.49*x_{income_{25000-49999}} + \\ .76*x_{income_{50000 - 74999}} + .24*x_{income_{75000-99999}} + 2.2*x_{income_{< 25000}} - .47*x_{marraige} + .58*x_{canada}$$
 
-The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0, if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100000-124999 dollars and not born in Canada. These are missing becuase the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma, goes down.
+The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0, if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100000-124999 dollars and not born in Canada. These are missing becuase the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma, is different relative to the baseline values. 
 
 
-```{r}
+```{r, echo=F, warning=F, message=F}
 # get summary and plot coefficients
 logit_summary %>% ggplot(aes(term, estimate)) + geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
@@ -175,7 +186,7 @@ logit_summary %>% ggplot(aes(term, estimate)) + geom_point() +
 This graph shows the distribution of coefficients for each variable covered, with the standard error extended to the left and right. There is a bar in the middle of the graph (at x = 0), to help visualize whether the variable has increases the probability of a person only completing high school.
 
 Figure 6
-```{r}
+```{r, echo=F, warning=F, message=F}
 # plot more detailed regression table, including Odds Ratios and p-values for 
 # odds ratios
 gtsummary::tbl_regression(gss_logit, intercept = T)
@@ -202,7 +213,9 @@ When applying our results to the small and large world we find that we would lik
 
 ## Weaknesses and Next Steps
 
-Although our model seems to be fairly accurate when modelling the population of Canada we still have to address some weaknesses that hindered the strength of our model. Firstly, the variable representing if someone completed high school only picks up if someone completed high school or not, implying that it may have been picking up people that didn't even complete high school. This causes some issues because it could skew some coefficients of our model and it turn makes our model weaker. Another potential weakness present in our model is that... . Lastly, we can also identify weaknesses with the data itself and how it impacts our model. When looking at the income variable, it is grouped into fairly large intervals and we feel that it may be more accurate if they asked for respondent's income without categorizing it. Since it is categorized, it can let people that have no income be equal to people with incomes of 24000 or people with very large incomes over 150000 be equal with those who make 125000. This hurts the accuracy of our model because the coefficient found could be a numerical relationship as opposed to a categorical one, meaning that the relationship between the variables would likely be stronger, leading to more accurate results. 
+Although our model seems to be fairly accurate when modelling the population of Canada we still have to address some weaknesses that hindered the strength of our model. Firstly, the variable representing if someone completed high school only picks up if someone completed high school or not, implying that it may have been picking up people that didn't even complete high school. This causes some issues because it could skew some coefficients of our model and it turn makes our model weaker . Lastly, we can also identify weaknesses with the data itself and how it impacts our model. When looking at the income variable, it is grouped into fairly large intervals and we feel that it may be more accurate if they asked for respondent's income without categorizing it. Since it is categorized, it can let people that have no income be equal to people with incomes of 24000 or people with very large incomes over 150000 be equal with those who make 125000. This hurts the accuracy of our model because the coefficient found could be a numerical relationship as opposed to a categorical one, meaning that the relationship between the variables would likely be stronger, leading to more accurate results. 
+
+Along with the weaknesses, we did find ways to improve our method in the future or perhaps different studies we can look at using our model. Firstly, in the future we could attempt to weight each response differently in order to account for the large proportion of people born outside of Canada who have higher educations. In the data we find that a higher proportion of people not born in Canada go on to higher education, compared to those born in Canada. In future studies we could try to weight the repsonses differently in order to make these proportions equal in order to strengthen our model and make it even more applicable to the people of Canada. 
 
 # Appendicies
 
@@ -218,7 +231,7 @@ Although our model seems to be fairly accurate when modelling the population of 
 - Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43),
   1686, https://doi.org/10.21105/joss.01686
   
-- Rohan Alexander and Sam Caetano (2020). Cleaning the GSS 2017 file.
+- Rohan Alexander and Sam Caetano (2020). Cleaning the GSS 2017 file. gss_cleaning-1.R
 
 - Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R
   package version 1.28.
