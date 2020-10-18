@@ -113,13 +113,13 @@ From our plots we can see some strengths and weaknesses of the survey. We can se
 
 As for our weaknesses, we see that many respondents had incomes under 50000 dollars, which could represent people that are retired or younger people who are in school and don't work as much. Also, some questions are subjective in this survey, such as self rating your health and mental health or your feelings on life. This is tough to interpret because one person's idea of good health could be someones definition of poor health which can cause some issues with interpretations. 
 
-For our model, we used the variables: number of children, sex, respondent income, whether the respondent is married not, rent (which was changed to become a binary 1 or 0 for if a person rents a home) and lastly we made a new variable which is binary and gives a 1 if the respondent has only completed high school or equivalent and 0 otherwise.
+For our model, we used the variables: number of children, sex, respondent income, whether the respondent is married not, whether the respondent was born in Canada and lastly we made a new variable which is binary and gives a 1 if the respondent has only completed high school or equivalent and 0 otherwise.
 
 # Model
 
 We plan to run a logistic regression model in the form:
 
-$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{children} + \beta_3*x_{male} + \beta_4*x_{income > 125000} + \beta_5*x_{income_{25000-49999}} + \\ \beta_6*x_{income_{50000 - 74999}} + \beta_7*x_{income_{75000-99999}} + \beta_8*x_{income_{< 25000}} + \beta_9*x_{marraige} + \beta_{10}*x_{rent}$$
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{children} + \beta_3*x_{male} + \beta_4*x_{income > 125000} + \beta_5*x_{income_{25000-49999}} + \\ \beta_6*x_{income_{50000 - 74999}} + \beta_7*x_{income_{75000-99999}} + \beta_8*x_{income_{< 25000}} + \beta_9*x_{marraige} + \beta_{10}*x_{canada}$$
 where each $\beta$ represents a coefficient determined by our model and is multiplied by each variable we planned to include. For some variables such as income, we see x values for each level. This happens because our model will expect a 1 or 0 for each of the entries, so if someone has an income under 25000 dollars, that $\beta$ will be 1 and the others for income will be 0. Also, the $\beta$ for number of children is just multiplied by how many children the person has, it does not use binary values like the other coefficients. $\hat{p}$ represent the probability a respondent has completed high school and $log$ represents the natural logarithm.
 
 The value we want to predict is whether or not someone has had a higher education, more specifically, we restrict it to a variable which gives a 1 for if a person has only completed high school and a 0 if they've completed some other level of education.
@@ -134,8 +134,8 @@ Where e is the exponential function and sum is the sum of our model equation.
 # run model with high school education as response, # of children, gender,
 # income, rent/own home and marriage status being explanatory
 
-gss_logit <- glm(only_highschool ~ number_total_children_known +
-                   sex + income_respondent + rent + married,
+gss_logit <- glm(only_highschool ~ total_children +
+                   sex + income_respondent + born_canada + married,
                  data = gss2, family = binomial())
 ```
 
@@ -151,8 +151,8 @@ logit_summary
 
 Using the glm() function, we find that our logit function is:
 
-$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -1.52 - .5*x_{children}
-- .455*x_{male} +-.147*x_{income > 125000} + 1.5*x_{income_{25000-49999}} + \\ .76*x_{income_{50000 - 74999}} + .265*x_{income_{75000-99999}} + 2.22*x_{income_{< 25000}} + .61*x_{marraige} + .116*x_{rent}$$
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.66 - .18*x_{children}
++ .48*x_{male} +-.1*x_{income > 125000} + 1.49*x_{income_{25000-49999}} + \\ .76*x_{income_{50000 - 74999}} + .24*x_{income_{75000-99999}} + 2.2*x_{income_{< 25000}} - .47*x_{marraige} + .58*x_{canada}$$
 
 The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0, if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100000-124999 dollars and not born in Canada. These are missing becuase the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma, goes down.
 
@@ -162,10 +162,10 @@ The output of this model is not like other regressions where we plug in numbers 
 logit_summary %>% ggplot(aes(term, estimate)) + geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
                 width = .5, colour = "black") +
-  geom_hline(aes(yintercept = 1), color = "black", linetype = "dashed") +
+  geom_hline(aes(yintercept = 0), color = "black", linetype = "dashed") +
   coord_flip() + 
   labs(title = "Figure 5: Distribution of Estimation of Coefficients",
-       subtitle = "Red bars represent estimated error",
+       subtitle = "Bars represent estimated error",
        y = "Weight",
        x = "Estimate",
        caption = "Source: GSS 2017 Data") +
@@ -195,7 +195,7 @@ Now that we've explained our p-values, we can take a look at which coefficients 
 
 Next we can look at income, which seems to be a fairly strong predictor of a person's education level. Our benchmark value for this category was an income level of 100000 - 124999 dollars. We can see that people with incomes lower than 50000 are much more likely to have only completed high school, income levels under 25000 have odds 110% higher than those of 100000 - 124999 dollars and the level of 25000 - 49999 has odds about 40% higher than the benchmark. These are very significant results because we now have a clear view of how income predicts level of education. This is also shown at the other extreme, with income over 125000, we see that people are 1.14 times less likely to have only completed high school. 
 
-Lastly, when we look at the variables that cover renting vs owning and a person's marraige status, we find that people that rent houses have lower chances of only completed high school and people that are married are much more likely to have completed a higher education. The renting coefficient is suprising because you would expect that people who own homes would have completed high school. There are a few probable explanations; more respondents are renting their homes meaning that it skews the data or younger people that responded may have not known what to select and said they owned the home they live at.
+BORN IN CANADA + MARRAIGE EXPLANATION HERE
 
 When applying our results to the small and large world we find that we would likely yield different results. Applying our model to the small world, in this case keeping it restricted to the people of Canada, we would find that our model would hold up quite well. The model gives fairly good probabilities at whether a person gets an education higher than high school for the people of Canada which makes sense because for the most part, people tend to want to go to university or college or are encouraged by their family to go there. This is not the case for people in other countries. In other countries, people may want to apply their work somewhere else or can't afford university so they instead find different work after high school. This is where our model may fail in the large world because of the different levels of university enrollment compared to Canada.
 
