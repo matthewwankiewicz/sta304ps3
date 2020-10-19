@@ -76,7 +76,8 @@ gss2 <- gss2 %>%
   mutate(rent = ifelse(own_rent == "Rented, even if no cash rent is paid", 1, 0))
 
 gss2 <- gss2 %>% 
-  mutate(married = ifelse(marital_status == "Married", 1, 0))
+  mutate(married = ifelse(marital_status == "Married", 1, 0)) %>% 
+  filter(age >= 23)
 
 gss3 <- gss2 %>% 
   mutate(age_groups = cut(age,
@@ -91,7 +92,7 @@ planned_cols3 <- planned_cols3 %>%
 ```{r, echo = F, message=F, warning=F}
 
 # bar plot for income
-gss2 %>% ggplot(aes(income_respondent)) + 
+gss2 %>% ggplot(aes(income_respondent, fill = income_respondent)) + 
   geom_bar() +
   labs(title = "Figure 1: Distribution of Income Groups",
        x = "Income", y = "Count",
@@ -110,7 +111,7 @@ gss2 %>% ggplot(aes(education)) +
   theme(axis.text.y = element_text(size = 7))
 
 # bar plot showing age groups
-gss3 %>% ggplot(aes(age_groups)) + 
+gss3 %>% ggplot(aes(age_groups, fill = age_groups)) + 
   geom_bar() +
   labs(title = "Figure 3: Distribution of Age Groups",
        x = "Age Group", y = "Count",
@@ -162,8 +163,8 @@ logit_summary
 
 Using the glm() function, we find that our logit function is:
 
-$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.67 - .18*x_{children}
-+ .48*x_{male} +-.1*x_{income > 125000} + 1.49*x_{income_{25000-49999}} + \\ .76*x_{income_{50000 - 74999}} + .24*x_{income_{75000-99999}} + 2.2*x_{income_{< 25000}} - .47*x_{marraige} + .58*x_{canada}$$
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.87 + .24*x_{children}
++ .44*x_{male} +-.11*x_{income > 125000} + 1.49*x_{income_{25000-49999}} + \\ .76*x_{income_{50000 - 74999}} + .25*x_{income_{75000-99999}} + 1.98*x_{income_{< 25000}} - .34*x_{marraige} + .62*x_{canada}$$
 
 The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0, if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100000-124999 dollars and not born in Canada. These are missing becuase the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma, is different relative to the baseline values. 
 
@@ -246,6 +247,104 @@ Along with the weaknesses, we did find ways to improve our method in the future 
 - Stats Canada, General Social Survey 
   (2017), https://www23.statcan.gc.ca/imdb/p2SV.pl?Function=getSurvey&SDDS=4501
   
-## Code
-  
-Code that supports this analysis can be found at https://github.com/matthewwankiewicz/sta304ps3
+## Additional Plots
+
+Below are some additional plots which couldn't make it into the analysis.
+
+```{r, echo=FALSE, warning=FALSE}
+percent <- function(x, digits = 0, format = "f", ...) {      
+  paste0(formatC(x * 100, format = format, digits = digits, ...), "%")
+}
+
+# visual minority
+temp <- gss %>% filter(!is.na(vis_minority)) %>% group_by(vis_minority) %>% summarise(n=n())
+v_m <- temp %>% mutate(prop=n/sum(n))
+v_m %>%
+ggplot(aes(x = vis_minority, y = prop, fill = vis_minority)) +
+    geom_bar(stat = "identity") +
+    theme_classic() +
+    labs(
+        x = "Visual Minority",
+        y = "Percentage",
+        title = paste(
+            "Visual Minority Summary"
+        )
+    )
+
+# born in canada
+# sprintf(x, fmt = '%#.3f')  
+temp1 <- gss2 %>% filter(!is.na(born_canada)) %>% group_by(born_canada) %>% summarise(n=n())
+b_c <- temp1 %>% mutate(prop=n/sum(n))
+b_c <- b_c %>% mutate(born_in_canada = ifelse(born_canada==0, "Not Born in Canada", "Born in Canada"))
+percentage <- percent(b_c$prop)
+b_c <- cbind(b_c, percentage)
+b_c %>%
+ggplot(aes(x = born_in_canada, y = percentage, fill = born_canada)) +
+    geom_bar(stat = "identity") +
+    theme_classic() +
+    labs(
+        x = "Born in Canada",
+        y = "Percentage",
+        title = paste(
+            "Born in Canada Summary"
+        )
+    )
+
+
+# sex
+temp2 <- gss %>% filter(!is.na(sex)) %>% group_by(sex) %>% summarise(n=n())
+sex <- temp2 %>% mutate(prop=n/sum(n))
+
+percentage <- percent(sex$prop)
+sex <- cbind(sex, percentage)
+sex %>%
+ggplot(aes(x = sex, y = percentage, fill = sex)) +
+    geom_bar(stat = "identity") +
+    theme_classic() +
+    labs(
+        x = "Gender",
+        y = "Percentage",
+        title = paste(
+            "Gender Summary"
+        )
+    )
+
+
+# provinces
+temp3 <- gss %>% filter(!is.na(province)) %>% group_by(province) %>% summarise(n=n())
+province <- temp3 %>% mutate(prop=n/sum(n))
+percentage <- province$n/sum(province$n) * 100
+#percentage <- percent(province$prop)
+province <- cbind(province, percentage)
+province %>%
+ggplot(aes(x = province, y = percentage, fill = province)) +
+    geom_bar(stat = "identity") +
+    theme_classic() +
+    labs(
+        x = "Provinces",
+        y = "Percentage",
+        title = paste(
+            "Population by Provinces"
+        )
+    ) +  coord_flip()
+
+# income
+temp4 <- gss %>% filter(!is.na(income_respondent)) %>% group_by(income_respondent) %>% summarise(n=n())
+inc_resp <- temp4 %>% mutate(prop=n/sum(n))
+percentage <- inc_resp$n/sum(inc_resp$n) * 100
+#percentage1 <- percent(inc_resp$prop)
+#percentage <-as.numeric(percentage1)
+inc_resp <- cbind(inc_resp, percentage)
+
+inc_resp %>% ggplot(aes(x = income_respondent, y = percentage, fill = income_respondent)) +
+    geom_bar(stat = "identity") +
+    theme_classic() +
+    labs(
+        x = "Inome Category",
+        y = "Percentage",
+        title = paste(
+            "Income Category Summary"
+        )
+    ) +  coord_flip()
+```
+
