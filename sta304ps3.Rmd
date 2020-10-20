@@ -25,7 +25,7 @@ library(cowplot)
 
 
 ```{r, echo = F, warning=F, message=F}
-# read in gss 2017 data
+# read in gss 2017 data, this can be done using the gss_cleaning in the inputs folder
 gss <- read_csv("inputs/gss.csv")
 ```
 
@@ -61,7 +61,7 @@ gss <- gss %>%
          age_groups = cut(age,
           breaks = c(0, 30, 40, 50, 60, 70, Inf),
           labels = c("15-29", "30-39", "40-49", "50-59", "60-69", "70+"))) %>%
-  filter(age >= 23)
+  filter(age > 23)
 ```
 
 ```{r, echo = F, message=F, warning=F}
@@ -85,16 +85,11 @@ gss %>% ggplot(aes(age_groups, fill = age_groups)) +
        x = "Age Group", y = "Count",
        caption = "Source: Simulated Data") +
   theme_classic()
-
-# create a function to represent percentages with "%"
-percent <- function(x, digits = 0, format = "f", ...) {      
-  paste0(formatC(x * 100, format = format, digits = digits, ...), "%")
-}
 ```
 
 Figures 1, 2, and 3 show the distribution of income, education level, and age, respectively.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=F}
 
 # create a function to represent percentages with "%"
 percent <- function(x, digits = 0, format = "f", ...) {      
@@ -115,7 +110,7 @@ fig4 <- v_m %>%
     )
 
 # create plot for proportion of people born in canada
-temp1 <- gss2 %>% filter(!is.na(born_canada)) %>% group_by(born_canada) %>% summarise(n=n())
+temp1 <- gss %>% filter(!is.na(born_canada)) %>% group_by(born_canada) %>% summarise(n=n())
 b_c <- temp1 %>% mutate(prop=n/sum(n))
 b_c <- b_c %>% mutate(born_in_canada = ifelse(born_canada==0, "Not Born in Canada", "Born in Canada"))
 percentage <- percent(b_c$prop)
@@ -128,7 +123,8 @@ ggplot(aes(x = born_in_canada, y = percentage, fill = born_canada)) +
         x = "Born in Canada",
         y = "Percentage",
         title = "Figure 4: Born in Canada Summary"
-    )
+    ) +
+  theme(axis.text.x = element_text(size = 7))
 
 
 # create plot for respondent gender
@@ -164,7 +160,8 @@ ggplot(aes(x = province, y = percentage, fill = province)) +
         title = "Figure 6: Population by Provinces"
     ) +  coord_flip() +
   theme(legend.title = element_text(size = 7), 
-        legend.text = element_text(size = 7))
+        legend.text = element_text(size = 5)) +
+  guides(fill=guide_legend(ncol=2))
 
 # plot for respondent's income level
 temp4 <- gss %>% filter(!is.na(income_respondent)) %>% group_by(income_respondent) %>% summarise(n=n())
@@ -185,6 +182,8 @@ fig8 <- inc_resp %>% ggplot(aes(x = income_respondent, y = percentage, fill = in
 plot_grid(fig5, fig6)
 plot_grid(fig7, fig8, ncol = 1)
 ```
+
+Figures 3-7 show various aspects of the demographics of the survey respondents. This includes the proportion born in Canada, the gender proportions, and provincial and income level proportions.
 
 From our plots, we can see some strengths and weaknesses of the survey. We can see that the distribution of age is fairly even which allows us to get a good idea of the opinions of all age ranges. Another strength is that the distribution of education levels seems to be accurate, we see that fewer people tend to get Bachelor's degrees compared to high school diplomas, which bodes well for our intended model, we need a fairly even distribution to get a good model. 
 
@@ -208,8 +207,10 @@ The ouput of our model gives us a probability of whether someone has only comple
 Where e is the exponential function and sum is the sum of our model's equation.
 
 ```{r, echo=F, message=F, warning=F}
-# run model with high school education as response, # of children, gender,
-# income, rent/own home and marriage status being explanatory
+# run model with high school education as response, 
+# number of total children,gender,
+# income, whether the respondent was born in Canada 
+# and marriage status being explanatory
 gss_logit <- glm(only_highschool ~ total_children +
                    sex + income_respondent + born_canada + married,
                  data = gss, family = binomial())
@@ -219,8 +220,7 @@ gss_logit <- glm(only_highschool ~ total_children +
 
 Figure 8: Basic Output of Logistic Regression Model
 ```{r, echo=F, message=F, warning=F}
-# visualize the model
-#summary(gss_logit)
+# visualize the model in a table
 logit_summary <- broom::tidy(gss_logit, conf.int = T)
 logit_summary
 ```
@@ -228,13 +228,13 @@ logit_summary
 Using the glm() function, we find that our logit function is:
 
 $$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.88 + .24*x_{children}
-+ .44*x_{male} +-.01*x_{income > 125000} + 1.49*x_{income_{25000-49999}} + \\ .77*x_{income_{50000 - 74999}} + .25*x_{income_{75000-99999}} + 1.98*x_{income_{< 25000}} + .63*x_{canada} - .34*x_{marraige}$$
++ .44*x_{male} +-.09*x_{income > 125000} + 1.49*x_{income_{25000-49999}} + \\ .77*x_{income_{50000 - 74999}} + .25*x_{income_{75000-99999}} + 1.97*x_{income_{< 25000}} + .63*x_{canada} - .34*x_{marraige}$$
 
-The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0 if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100000-124999 dollars and not born in Canada. These are missing because the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma is different relative to the baseline values. 
+The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0 if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100 000-124 999 dollars and not born in Canada. These are missing because the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma is different relative to the baseline values. 
 
 
 ```{r, echo=F, warning=F, message=F}
-# get summary and plot coefficients
+# get summary and plot coefficients with error bars
 logit_summary %>% ggplot(aes(term, estimate)) + geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high),
                 width = .5, colour = "black") +
@@ -252,12 +252,13 @@ This graph shows the distribution of coefficients for each variable covered, wit
 
 Figure 10: Logistic Regression Outputs with Confidence Intervals Present
 ```{r, echo=F, warning=F, message=F}
-# plot more detailed regression table, including Odds Ratios and p-values for 
-# odds ratios
+# plot more detailed regression table, including Odds Ratios 
 gtsummary::tbl_regression(gss_logit, intercept = T)
 ```
 
-Figure 10 is another way of looking at our coefficients, we can find odd ratios of each category impacting whether or not someone has only completed high school. The way we interpret these odds ratios is through the decimal points of the ratios. If one outcome is n decimal places higher, the odds of it impacting the model's decision are n times more likely. For example, we see that the odds ratio for Males is 0.45, which means that males are 45% more likely to have only completed high school. The same idea applies to negative values, it means they are less likely to impact. 
+Figure 10 is a cleaner way of looking at our coefficients, we can find odd ratios of each category impacting whether or not someone has only completed high school. The way we interpret these odds ratios is through the decimal points of the ratios. If one outcome is n decimal places higher, the odds of it impacting the model's decision are n times more likely. For example, we see that the odds ratio for Males is 0.44, which means that males are more likely to have only completed high school. The same idea applies to negative values, it means they are less likely to impact. 
+
+For categorical variables like income, the value of the odds ratio depends on whether the value is greater than or less than 1. For values less than one, such as income about 125 000 dollars, it means that a person is less likely to only have a high school education compared to someone with the baseline income of 100 000 to 124 999 dollars. The same idea goes for values above 1, this time it means that the person is more likely to have only completed high school.
 
 We can also look at the p-values, to see which results are the most statistically significant. P-values are used with null hypotheses to determine if an experiment is significant. Since our p-values are under the traditional benchmark of 0.05, we can reject our null hypothesis and conclude that these results are in-fact, significant.
 
@@ -265,9 +266,9 @@ We can also look at the p-values, to see which results are the most statisticall
 
 ## Analysis
 
-Now that we've created our model and plotted it, it's time to interpret what it means and how it impacts the small and large worlds. Firstly, we should interpret our coefficients and how they determine a person's education level. When looking at our p-values for the coefficients, we find that almost all coefficients are very strong evidence to reject our null hypothesis as discussed in Figure 10. We see that having an income level of over 125000 dollars still gives evidence to reject our null hypothesis (that it has no impact on education level) but it's very close to not being enough evidence. What this means is that although it does decrease your chances of only having a high school diploma, there may have been instances where a person reaches that income level with a high school diploma. This makes sense because in the past people did not need university degrees to make a successful living, because most people didn't go to university. According to an article in the UK Guardian called "Student Experience - Then and Now", "In the early 1960s, only 4% of school leavers went to university, rising to around 14% by the end of the 1970s. Nowadays, more than 40% of young people start undergraduate degrees" (Lightfoot 2016). This is a significant increase in levels and can help explain the higher than normal p-value for our model's standards.
+Now that we've created our model and plotted it, we can interpret what it means and how it impacts the small and large worlds. Firstly, we should interpret our coefficients and how they determine a person's education level. When looking at our p-values for the coefficients, we find that almost all coefficients are very strong evidence to reject our null hypothesis as discussed in Figure 10. We see that having an income level of over 125 000 dollars still gives evidence to reject our null hypothesis (that it has no impact on education level) but it's very close to not being enough evidence. What this means is that although it does decrease your chances of only having a high school diploma, there may have been instances where a person reaches that income level with a high school diploma. This makes sense because in the past people did not need university degrees to make a successful living, because most people didn't go to university. According to an article in the UK Guardian called "Student Experience - Then and Now", "In the early 1960s, only 4% of school leavers went to university, rising to around 14% by the end of the 1970s. Nowadays, more than 40% of young people start undergraduate degrees" (The Student Experience - Then and Now ,2016). This is a significant increase in levels and can help explain the higher than normal p-value for our model's standards.
 
-When examining our data in Figure 8, we see that there is a correlation between having only a high school education and lower income levels. This can be explained through the accessibility to resources, knowledge reservoirs and networking opportunities that are accompanied by post-secondary education. The job market typically values higher education when selecting candidates for positions. According to a 2015 report by Statistics Canada, both men and women with bachelor’s degrees as their highest level of education completed earned more income than their counterparts with high school diplomas. Women that completed a bachelor’s degree earned roughly 25000 dollars more than women with only a high school diploma. Likewise, men with bachelor’s degrees earned around 26000 dollars more than those with only a high school diploma (Does Education Pay, 2017).
+When examining our data in Figure 8, we see that there is a correlation between having only a high school education and lower income levels. This can be explained through the accessibility to resources, knowledge reservoirs and networking opportunities that are accompanied by post-secondary education. The job market typically values higher education when selecting candidates for positions. According to a 2015 report by Statistics Canada, both men and women with bachelor’s degrees as their highest level of education completed earned more income than their counterparts with high school diplomas. Women that completed a bachelor’s degree earned roughly 25 000 dollars more than women with only a high school diploma. Likewise, men with bachelor’s degrees earned around 26 000 dollars more than those with only a high school diploma (Does Education Pay, 2017).
 
 As seen in Figure 8, men are more likely to have only completed high school as their highest level of education. According to Statistics Canada, education has evolved significantly since 1990, specifically for women in Canada (Women in Education, 2009). The proportion of women that have completed post-secondary education has nearly doubled and the percentage of women who drop out of high school has improved from 26% to 9% over this period (Women in Education, 2009). In contrast, Canadian men have not seen this level of improvement over the years as nearly 10% more women complete a bachelor’s degree than men (Women in Education, 2009). This seems to be due to gender-based preferences as women are more committed to school and aim to continue their education (Women in Education, 2009). According to another Statistics Canada report, 47% of male occupations are either in the fields of trades, transport and equipment operators or sales and services (Male employment, 2009). These jobs typically do not require advanced education and can explain the strong correlation in our analysis between men and having only completed a high school diploma. Men seem to be more interested in jobs that do not require education beyond high school compared to women.
 
@@ -281,7 +282,7 @@ As seen in Figure 8, individuals with high school as their highest completed edu
 
 ## Limitations and Future Work
 
-Post-stratification is a method used in survey analysis to weigh survey results based on the total population distribution (Little, 1993). Ideally, we would weigh every variable relative to the overall Canadian population. However, we haven’t weighed our data as we are limited by time and resources. In the future, researchers should perform post-stratification to weigh the variables of the survey according to the larger general Canadian population. This can be exemplified in Figures A and B of the Appendix. According to Statistics Canada, the male to female ratio is near 1:1 as females account for 50.4% of the Canadian population (Female Population, 2010). However, our survey results in Figure A show that respondents were 55% female and 45% male. Ideally, we should be weighing our data to match this general population distribution. In contrast, the results of Figure B are very similar to the number of people born in Canada vs not born in Canada for the general population (CITE LINK). Therefore, the data for this variable would not be altered much after post-stratification.
+Post-stratification is a method used in survey analysis to weigh survey results based on the total population distribution (Little, 1993). Ideally, we would weigh every variable relative to the overall Canadian population. However, we haven’t weighed our data as we are limited by time and resources. In the future, researchers should perform post-stratification to weigh the variables of the survey according to the larger general Canadian population. This can be exemplified in Figures 4 and 5 of the Appendix. According to Statistics Canada, the male to female ratio is near 1:1 as females account for 50.4% of the Canadian population (Female Population, 2010). However, our survey results in Figure 5 show that respondents were 55% female and 45% male. Ideally, we should be weighing our data to match this general population distribution. In contrast, the results of Figure 4 are very similar to the number of people born in Canada vs not born in Canada for the general population (Focus on Geography, 2016). Therefore, the data for this variable would not be altered much after post-stratification.
 
 To conform to the Logistic Regression model, we have converted the highest education level completed variable to a binary categorical variable (High school is the highest education completed vs High school is not the highest education completed). However, this is limiting as different forms of post-secondary education are grouped together as equals. In reality, college degrees, trades certificates and university degrees offer varying benefits and thus should be considered separately. In the future, researchers can look to perform this analysis using a different regression model that can incorporate the differences between the various post-secondary education paths.
 
