@@ -48,7 +48,7 @@ A sampling frame is defined as the list of units in the survey population (Austr
 
 A sampled population, also known as a study population, is defined as the population represented by the survey sample (Wu, 2020). The sampled population in this GSS study is represented by the 19 423 individuals that completed this survey
 
-Respondents were found through the Census because it is conducted on people over the age of 15, it fits right in with their target population. Their initial sample had 43,000 people and brought down the number of invitations sent to 34,000 households while 20,000 responses were expected. The government reported a response rate of 52.4% and with our records, they collected 20602 responses. As for non-response, the researchers changed the weighting on responses (making some responses account for more than others) in order to account for non-response to avoid bias.
+Respondents were found through the Census because it is conducted on people over the age of 15, it fits right in with their target population. Their initial sample had 43 000 people and brought down the number of invitations sent to 34 000 households while 20 000 responses were expected. The government reported a response rate of 52.4% and with our records, they collected 20 602 responses. As for non-response, the researchers changed the weighting on responses (making some responses account for more than others) in order to account for non-response to avoid bias.
 
 ```{r, echo=F, message=F, warning=F}
 # create new variable which for some we plan to use for the analysis, others were
@@ -245,7 +245,7 @@ $$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.88 + .24*x_{children}
 + .44*x_{male} +-.09*x_{income > 125000} + 1.49*x_{income_{25000-49999}}$$  
 $$+ .77*x_{income_{50000 - 74999}} + .25*x_{income_{75000-99999}} + 1.97*x_{income_{< 25000}} + .63*x_{canada} - .34*x_{marraige}$$
 
-The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0 if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100 000-124 999 dollars and not born in Canada. These are missing because the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma is different relative to the baseline values. 
+The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0 if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100 000 - 124 999 dollars and not born in Canada. These are missing because the function takes the other values as default values, so for every difference in the category, the probability of having only a high school diploma is different relative to the baseline values. 
 
 
 ```{r, echo=F, warning=F, message=F}
