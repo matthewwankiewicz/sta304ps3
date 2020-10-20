@@ -1,5 +1,5 @@
 ---
-title: "Interesting Title"
+title: "Income is a Strong Predictor for Higher Education Enrolment"
 author: "Matthew Wankiewcz, Xiaoyan Yang, Alen Mitrovski, Harry Hwang"
 date: "19/10/2020"
 output:
@@ -7,7 +7,7 @@ output:
   html_document: default
 abstract: The need for higher education is an idea that is constantly growing around
   the world, especially in Canada. In this paper, we run a logistic regression model
-  to determine which factors seems to impact someone's chances of only having a high
+  to determine which factors seem to impact someone's chances of only having a high
   school diploma using GSS survey data from 2017. From our model, we find that the
   higher a person's income is, the more likely they are to have completed another
   level of education other than high school. These results are significant as it shows
@@ -18,9 +18,11 @@ abstract: The need for higher education is an idea that is constantly growing ar
 #install.packages("tidyverse")
 #install.packages("gtsummary")
 #install.packages("cowplot")
+#install.packages("knitr")
 library(tidyverse)
 library(gtsummary)
 library(cowplot)
+library(knitr)
 ```
 
 
@@ -76,7 +78,8 @@ gss %>% ggplot(aes(education, fill = education)) +
   theme_classic() +
   theme(axis.text.y = element_text(size = 7)) +
   theme(legend.title = element_text(size = 9), 
-               legend.text = element_text(size = 5))
+        legend.text = element_text(size = 5),
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 # bar plot showing age groups
 gss %>% ggplot(aes(age_groups, fill = age_groups)) + 
@@ -96,35 +99,39 @@ percent <- function(x, digits = 0, format = "f", ...) {
   paste0(formatC(x * 100, format = format, digits = digits, ...), "%")
 }
 
-# create a plot for visual minorities. 
+# create a plot for visual minorities with new df for visual minorities. 
 temp <- gss %>% filter(!is.na(vis_minority)) %>% group_by(vis_minority) %>% summarise(n=n())
 v_m <- temp %>% mutate(prop=n/sum(n))
-fig4 <- v_m %>%
+v_m %>%
   ggplot(aes(x = vis_minority, y = prop, fill = vis_minority)) +
     geom_bar(stat = "identity") +
     theme_classic() +
     labs(
         x = "Visual Minority",
         y = "Percentage",
-        title = "Figure 3: Visual Minority Summary"
+        title = "Figure 3: Visible Minority Summary",
+        fill = "Visible Minority"
     )
 
 # create plot for proportion of people born in canada
 temp1 <- gss %>% filter(!is.na(born_canada)) %>% group_by(born_canada) %>% summarise(n=n())
+# create new dataframe with proportions for born in Canada plot
 b_c <- temp1 %>% mutate(prop=n/sum(n))
 b_c <- b_c %>% mutate(born_in_canada = ifelse(born_canada==0, "Not Born in Canada", "Born in Canada"))
 percentage <- percent(b_c$prop)
 b_c <- cbind(b_c, percentage)
-fig5 <- b_c %>%
+fig4 <- b_c %>%
 ggplot(aes(x = born_in_canada, y = percentage, fill = born_canada)) +
     geom_bar(stat = "identity") +
     theme_classic() +
     labs(
         x = "Born in Canada",
         y = "Percentage",
-        title = "Figure 4: Born in Canada Summary"
+        title = "Figure 4: Born in Canada Summary",
+        fill = "Born in Canada?"
     ) +
-  theme(axis.text.x = element_text(size = 7))
+  theme(axis.text.x = element_text(size = 7, angle = 45, hjust = 1),
+        plot.title = element_text(size=12))
 
 
 # create plot for respondent gender
@@ -133,14 +140,15 @@ sex <- temp2 %>% mutate(prop=n/sum(n))
 
 percentage <- percent(sex$prop)
 sex <- cbind(sex, percentage)
-fig6 <- sex %>%
+fig5 <- sex %>%
   ggplot(aes(x = sex, y = percentage, fill = sex)) +
     geom_bar(stat = "identity") +
     theme_classic() +
     labs(
         x = "Gender",
         y = "Percentage",
-        title = "Figure 5: Gender Summary"
+        title = "Figure 5: Gender Summary",
+        fill = "Gender"
     )
 
 
@@ -150,14 +158,15 @@ province <- temp3 %>% mutate(prop=n/sum(n))
 percentage <- province$n/sum(province$n) * 100
 #percentage <- percent(province$prop)
 province <- cbind(province, percentage)
-fig7 <- province %>%
+fig6 <- province %>%
 ggplot(aes(x = province, y = percentage, fill = province)) +
     geom_bar(stat = "identity") +
     theme_classic() +
     labs(
         x = "Provinces",
         y = "Percentage",
-        title = "Figure 6: Population by Provinces"
+        title = "Figure 6: Population by Provinces",
+        fill = "Province"
     ) +  coord_flip() +
   theme(legend.title = element_text(size = 7), 
         legend.text = element_text(size = 5)) +
@@ -169,7 +178,7 @@ inc_resp <- temp4 %>% mutate(prop=n/sum(n))
 percentage <- inc_resp$n/sum(inc_resp$n) * 100
 inc_resp <- cbind(inc_resp, percentage)
 
-fig8 <- inc_resp %>% ggplot(aes(x = income_respondent, y = percentage, fill = income_respondent)) +
+fig7 <- inc_resp %>% ggplot(aes(x = income_respondent, y = percentage, fill = income_respondent)) +
     geom_bar(stat = "identity") +
     theme_classic() +
     labs(
@@ -179,11 +188,11 @@ fig8 <- inc_resp %>% ggplot(aes(x = income_respondent, y = percentage, fill = in
         fill = "Income"
     ) +  coord_flip()
 
-plot_grid(fig5, fig6)
-plot_grid(fig7, fig8, ncol = 1)
+plot_grid(fig4, fig5)
+plot_grid(fig6, fig7, ncol = 1)
 ```
 
-Figures 3-7 show various aspects of the demographics of the survey respondents. This includes the proportion born in Canada, the gender proportions, and provincial and income level proportions.
+Figures 3-7 show various aspects of the demographics of the survey respondents. This includes the proportions of racial minorities, proportions of those born in Canada, the gender proportions, and provincial and income level proportions.
 
 From our plots, we can see some strengths and weaknesses of the survey. We can see that the distribution of age is fairly even which allows us to get a good idea of the opinions of all age ranges. Another strength is that the distribution of education levels seems to be accurate, we see that fewer people tend to get Bachelor's degrees compared to high school diplomas, which bodes well for our intended model, we need a fairly even distribution to get a good model. 
 
@@ -195,7 +204,8 @@ For our model, we used the variables: number of children, sex, respondent income
 
 We plan to run a logistic regression model in the form:
 
-$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{children} + \beta_3*x_{male} + \beta_4*x_{income > 125000} + \beta_5*x_{income_{25000-49999}} + \\ \beta_6*x_{income_{50000 - 74999}} + \beta_7*x_{income_{75000-99999}} + \beta_8*x_{income_{< 25000}} + \beta_9*x_{marraige} + \beta_{10}*x_{canada}$$
+$$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{children} + \beta_3*x_{male} + \beta_4*x_{income > 125000} + \beta_5*x_{income_{25000-49999}}$$ 
+$$ + \beta_6*x_{income_{50000 - 74999}} + \beta_7*x_{income_{75000-99999}} + \beta_8*x_{income_{< 25000}} + \beta_9*x_{marraige} + \beta_{10}*x_{canada}$$
 where each $\beta$ represents a coefficient determined by our model and is multiplied by each variable we planned to include. For some variables such as income, we see x values for each level. This happens because our model will expect a 1 or 0 for each of the entries, so if someone has an income under 25000 dollars, that $\beta$ will be 1 and the others for income will be 0. Also, the $\beta$ for number of children is just multiplied by how many children the person has, it does not use binary values like the other coefficients. $\hat{p}$ represent the probability a respondent has completed high school and $log$ represents the natural logarithm.
 
 The value we want to predict is whether or not someone has had a higher education, more specifically, we restrict it to a variable which gives a 1 for if a person has only completed high school and a 0 if they've completed some other level of education.
@@ -222,13 +232,14 @@ Figure 8: Basic Output of Logistic Regression Model
 ```{r, echo=F, message=F, warning=F}
 # visualize the model in a table
 logit_summary <- broom::tidy(gss_logit, conf.int = T)
-logit_summary
+kable(logit_summary)
 ```
 
 Using the glm() function, we find that our logit function is:
 
 $$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = -2.88 + .24*x_{children}
-+ .44*x_{male} +-.09*x_{income > 125000} + 1.49*x_{income_{25000-49999}} + \\ .77*x_{income_{50000 - 74999}} + .25*x_{income_{75000-99999}} + 1.97*x_{income_{< 25000}} + .63*x_{canada} - .34*x_{marraige}$$
++ .44*x_{male} +-.09*x_{income > 125000} + 1.49*x_{income_{25000-49999}}$$  
+$$+ .77*x_{income_{50000 - 74999}} + .25*x_{income_{75000-99999}} + 1.97*x_{income_{< 25000}} + .63*x_{canada} - .34*x_{marraige}$$
 
 The output of this model is not like other regressions where we plug in numbers and receive our value right away, we have to do a little more work for this one. Every term in this equation will either be multiplied by 1 or 0 if the person has that characteristic or not. You may notice that some categories are missing, such as the female gender, income from 100 000-124 999 dollars and not born in Canada. These are missing because the function takes the other values as default ideal values, so for every difference in the category, the probability of having only a high school diploma is different relative to the baseline values. 
 
@@ -266,7 +277,7 @@ We can also look at the p-values, to see which results are the most statisticall
 
 ## Analysis
 
-Now that we've created our model and plotted it, we can interpret what it means and how it impacts the small and large worlds. Firstly, we should interpret our coefficients and how they determine a person's education level. When looking at our p-values for the coefficients, we find that almost all coefficients are very strong evidence to reject our null hypothesis as discussed in Figure 10. We see that having an income level of over 125 000 dollars still gives evidence to reject our null hypothesis (that it has no impact on education level) but it's very close to not being enough evidence. What this means is that although it does decrease your chances of only having a high school diploma, there may have been instances where a person reaches that income level with a high school diploma. This makes sense because in the past people did not need university degrees to make a successful living, because most people didn't go to university. According to an article in the UK Guardian called "Student Experience - Then and Now", "In the early 1960s, only 4% of school leavers went to university, rising to around 14% by the end of the 1970s. Nowadays, more than 40% of young people start undergraduate degrees" (The Student Experience - Then and Now ,2016). This is a significant increase in levels and can help explain the higher than normal p-value for our model's standards.
+Now that we've created our model and plotted it, we can interpret what it means and how it impacts the small and large worlds. Firstly, we should interpret our coefficients and how they determine a person's education level. When looking at our p-values for the coefficients, we find that almost all coefficients are very strong evidence to reject our null hypothesis as discussed in Figure 10. We see that having an income level of over 125 000 dollars still gives evidence to reject our null hypothesis (that it has no impact on education level) but it's very close to not being enough evidence. What this means is that although it does decrease your chances of only having a high school diploma, there may have been instances where a person reaches that income level with a high school diploma. This makes sense because in the past people did not need university degrees to make a successful living, because most people didn't go to university. According to an article in the UK Guardian called "Student Experience - Then and Now", "In the early 1960s, only 4% of school leavers went to university, rising to around 14% by the end of the 1970s. Nowadays, more than 40% of young people start undergraduate degrees" (The Student Experience - Then and Now, 2016). This is a significant increase in levels and can help explain the higher than normal p-value for our model's standards.
 
 When examining our data in Figure 8, we see that there is a correlation between having only a high school education and lower income levels. This can be explained through the accessibility to resources, knowledge reservoirs and networking opportunities that are accompanied by post-secondary education. The job market typically values higher education when selecting candidates for positions. According to a 2015 report by Statistics Canada, both men and women with bachelor’s degrees as their highest level of education completed earned more income than their counterparts with high school diplomas. Women that completed a bachelor’s degree earned roughly 25 000 dollars more than women with only a high school diploma. Likewise, men with bachelor’s degrees earned around 26 000 dollars more than those with only a high school diploma (Does Education Pay, 2017).
 
@@ -279,10 +290,12 @@ are more likely to have advanced post-secondary education. This relationship is 
 
 As seen in Figure 8, individuals with high school as their highest completed education are more likely to avoid marriage. A potential reason for this relationship is that individuals with only a high school diploma tend to make less money than individuals with a higher education level (Does Education Pay, 2017). As a result, these individuals might not believe they are in a financially stable enough situation to support a marriage.
 
+When applying our results to the small and large world (McElreath, 2018) we find that we would likely yield different results. Applying our model to the small world (keeping it restricted to the people of Canada), we would find that our model would hold up quite well. The model gives fairly accurate probabilities of whether a person gets an education higher than high school for the people of Canada which makes sense because, for the most part, people tend to want to go to university or college or are encouraged by their family to go there. This is not the case for people in other countries. In other countries, people may want to apply for their work somewhere else or can't afford university so they instead find different work after high school. This is where our model may fail in the large world because of the different levels of university enrollment compared to Canada.
+
 
 ## Limitations and Future Work
 
-Post-stratification is a method used in survey analysis to weigh survey results based on the total population distribution (Little, 1993). Ideally, we would weigh every variable relative to the overall Canadian population. However, we haven’t weighed our data as we are limited by time and resources. In the future, researchers should perform post-stratification to weigh the variables of the survey according to the larger general Canadian population. This can be exemplified in Figures 4 and 5 of the Appendix. According to Statistics Canada, the male to female ratio is near 1:1 as females account for 50.4% of the Canadian population (Female Population, 2010). However, our survey results in Figure 5 show that respondents were 55% female and 45% male. Ideally, we should be weighing our data to match this general population distribution. In contrast, the results of Figure 4 are very similar to the number of people born in Canada vs not born in Canada for the general population (Focus on Geography, 2016). Therefore, the data for this variable would not be altered much after post-stratification.
+Post-stratification is a method used in survey analysis to weigh survey results based on the total population distribution (Little, 1993). Ideally, we would weigh every variable relative to the overall Canadian population. However, we haven’t weighed our data as we are limited by time and resources. In the future, researchers should perform post-stratification to weigh the variables of the survey according to the larger general Canadian population. This can be exemplified in Figures 4 and 5 from the data section. According to Statistics Canada, the male to female ratio is near 1:1 as females account for 50.4% of the Canadian population (Female Population, 2010). However, our survey results in Figure 5 show that respondents were 55% female and 45% male. Ideally, we should be weighing our data to match this general population distribution. In contrast, the results of Figure 4 are very similar to the number of people born in Canada vs not born in Canada for the general population (Focus on Geography, 2016). Therefore, the data for this variable would not be altered much after post-stratification.
 
 To conform to the Logistic Regression model, we have converted the highest education level completed variable to a binary categorical variable (High school is the highest education completed vs High school is not the highest education completed). However, this is limiting as different forms of post-secondary education are grouped together as equals. In reality, college degrees, trades certificates and university degrees offer varying benefits and thus should be considered separately. In the future, researchers can look to perform this analysis using a different regression model that can incorporate the differences between the various post-secondary education paths.
 
@@ -308,6 +321,9 @@ The data used in this analysis was filtered to only include responses from indiv
   from https://www.theguardian.com/education/2016/jun/24/has-university-life-changed-student-experience-past-present-parents-vox-pops
   
 - R. J. A. Little (1993) Post-Stratification: A Modeler's Perspective, Journal of the American Statistical Association, 88:423, 1001-1012, DOI: 10.1080/01621459.1993.10476368
+
+- McElreath, R. (2018). Statistical Rethinking. Chapman and Hall/CRC. 
+  doi: 10.1201/9781315372495
 
 - R Core Team (2019). R: A language and environment for statistical computing. R Foundation for
   Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
@@ -343,6 +359,9 @@ The data used in this analysis was filtered to only include responses from indiv
   package version 1.0.0. https://CRAN.R-project.org/package=cowplot
   
 - Wu, Changbao, And Mary E. Thompson . Sampling Theory and Practice. Springer Nature, 2020
+
+- Yihui Xie (2020). knitr: A General-Purpose Package for Dynamic Report Generation in R. R
+  package version 1.30.
 
 ## Code
 
