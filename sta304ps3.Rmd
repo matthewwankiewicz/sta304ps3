@@ -90,7 +90,7 @@ gss %>% ggplot(aes(age_groups, fill = age_groups)) +
   theme_classic()
 ```
 
-Figures 1, 2, and 3 show the distribution of income, education level, and age, respectively.
+Figures 1 and 2 show the distribution of education level, and age.
 
 ```{r, echo=FALSE, warning=FALSE, message=F}
 
@@ -196,7 +196,7 @@ Figures 3-7 show various aspects of the demographics of the survey respondents. 
 
 From our plots, we can see some strengths and weaknesses of the survey. We can see that the distribution of age is fairly even which allows us to get a good idea of the opinions of all age ranges. Another strength is that the distribution of education levels seems to be accurate, we see that fewer people tend to get Bachelor's degrees compared to high school diplomas, which bodes well for our intended model, we need a fairly even distribution to get a good model. 
 
-As for our weaknesses, we see that many respondents had incomes under 50000 dollars, which could represent people that are retired or younger people who are in school and don't work as much. Also, some questions are subjective in this survey, such as self-rating your health and mental health or your feelings on life. This is tough to interpret because one person's idea of good health could be someone's definition of poor health.
+As for our weaknesses, we see that many respondents had incomes under 50 000 dollars, which could represent people that are retired or younger people who are in school and don't work as much. Also, some questions are subjective in this survey, such as self-rating your health and mental health or your feelings on life. This is tough to interpret because one person's idea of good health could be someone's definition of poor health.
 
 For our model, we used the variables: number of children, sex, respondent income, whether the respondent is married not, whether the respondent was born in Canada and lastly we made a new variable which is binary and gives a 1 if the respondent has only completed high school or equivalent and 0 otherwise.
 
@@ -206,15 +206,19 @@ We plan to run a logistic regression model in the form:
 
 $$log \left( \frac{\hat{p}}{1-\hat{p}} \right) = \beta_1 + \beta_2*x_{children} + \beta_3*x_{male} + \beta_4*x_{income > 125000} + \beta_5*x_{income_{25000-49999}}$$ 
 $$ + \beta_6*x_{income_{50000 - 74999}} + \beta_7*x_{income_{75000-99999}} + \beta_8*x_{income_{< 25000}} + \beta_9*x_{marraige} + \beta_{10}*x_{canada}$$
-where each $\beta$ represents a coefficient determined by our model and is multiplied by each variable we planned to include. For some variables such as income, we see x values for each level. This happens because our model will expect a 1 or 0 for each of the entries, so if someone has an income under 25000 dollars, that $\beta$ will be 1 and the others for income will be 0. Also, the $\beta$ for number of children is just multiplied by how many children the person has, it does not use binary values like the other coefficients. $\hat{p}$ represent the probability a respondent has completed high school and $log$ represents the natural logarithm.
+where each $\beta$ represents a coefficient determined by our model and is multiplied by each variable we planned to include. For some variables such as income, we see x values for each level. This happens because our model will expect a 1 or 0 for each of the entries, so if someone has an income under 25 000 dollars, that $\beta$ will be 1 and the others for income will be 0. Also, the $\beta$ for number of children is just multiplied by how many children the person has, it does not use binary values like the other coefficients. $\hat{p}$ represent the probability a respondent has completed high school and $log$ represents the natural logarithm.
 
 The value we want to predict is whether or not someone has had a higher education, more specifically, we restrict it to a variable which gives a 1 for if a person has only completed high school and a 0 if they've completed some other level of education.
 
-This model was run using the glm. The glm function was run with the family being specified as binomial() because our response variable "only_highschool" is a binary variable with responses of "yes" or "no".
+This model was run using the glm function. The glm function was run with the family being specified as binomial() because our response variable "only_highschool" is a binary variable with responses of "yes" or "no".
 
 The ouput of our model gives us a probability of whether someone has only completed high school. We find this by assigning each $\beta$ value a 1 or 0 (or number for number of children) and then solve it using the equation: $$\hat{p} = \frac{e^{sum}}{1 + e^{sum}}$$. 
 
 Where e is the exponential function and sum is the sum of our model's equation.
+
+This type of model is best suited for the analysis we want to conduct because it allows us to create a regression line for a binary variable. Instead of having a straight regression line going through some of the points, logistic regression attempts to make a more curved line to capture as many points as possible. We feel that this model is more suited than other models like linear regression because of how versatile it is in being able to change its output depending on a wide variety of inputs. One part where this model falls short is that we get a probability from this model and have to interpret it, while linear regression gets an exact value from the equation.
+
+Our model converges to a maximum probability of about 93% of only having a high school diploma. This is done by inputting the maximum values for our regression (10 kids, Man, income under 25 000, born in Canada and unmarried), this is extreme but there is a chance it is possible. Our lower bound for probabilities is about 3.6%. Again this is using the extreme case (Woman, no kids, income over 125 000, not born in Canada and married).
 
 ```{r, echo=F, message=F, warning=F}
 # run model with high school education as response, 
